@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wallet/screens/transfer.dart';
 import 'package:wallet/screens/withdraw.dart';
+import 'package:wallet/screens/deposit.dart';
+import 'package:wallet/screens/link_account.dart'; // Import the new screen for linking account
+import 'package:wallet/screens/link_wallet.dart'; // Import the new screen for linking wallet
 import '../providers/wallet_provider.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/recent_activity_list.dart';
-import 'deposit.dart';
 
 class DashboardScreen extends StatelessWidget {
   @override
@@ -59,6 +61,28 @@ class DashboardScreen extends StatelessWidget {
                             label: 'Withdraw',
                             onPressed: () {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => WithdrawScreen()));
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildActionButton(
+                            context,
+                            icon: Icons.link,
+                            label: 'Link Account',
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => LinkAccountScreen()));
+                            },
+                          ),
+                          _buildActionButton(
+                            context,
+                            icon: Icons.link_outlined,
+                            label: 'Link Wallet',
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => LinkWalletScreen()));
                             },
                           ),
                         ],
