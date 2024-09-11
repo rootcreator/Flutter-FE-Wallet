@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './providers/auth_provider.dart';
 import './providers/wallet_provider.dart';
-import './screens/login_screen.dart';
-import './screens/dashboard_screen.dart';
-import './screens/deposit_screen.dart';
-import './screens/withdraw_screen.dart';
-import './screens/transfer_screen.dart';
-import './screens/transactions_screen.dart';
+import './screens/login.dart';
+import './screens/dashboard.dart';
+import './screens/deposit.dart';
+import './screens/withdraw.dart';
+import './screens/transfer.dart';
+import './screens/transactions.dart';
 
 void main() {
   runApp(MyApp());
