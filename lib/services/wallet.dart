@@ -20,7 +20,7 @@ class WalletService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Error: $e");
+      print("Deposit Error: $e");
       return false;
     }
   }
@@ -40,7 +40,7 @@ class WalletService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Error: $e");
+      print("Withdraw Error: $e");
       return false;
     }
   }
@@ -60,7 +60,7 @@ class WalletService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Error: $e");
+      print("Transfer Error: $e");
       return false;
     }
   }
@@ -76,7 +76,7 @@ class WalletService {
       );
       return response.data['transactions'];
     } catch (e) {
-      print("Error: $e");
+      print("Get Transactions Error: $e");
       return [];
     }
   }

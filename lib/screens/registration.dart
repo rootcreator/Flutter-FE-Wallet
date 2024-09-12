@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../services/auth.dart';
-import './dashboard.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
+      appBar: AppBar(title: const Text("Register")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -32,6 +32,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: "Email"),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
                   }
                   return null;
                 },
@@ -57,8 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       _isLoading = true;
                     });
 
-                    bool success = await _authService.login(
+                    bool success = await _authService.register(
                       _usernameController.text,
+                      _emailController.text,
                       _passwordController.text,
                     );
 
@@ -67,21 +78,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     });
 
                     if (success) {
-                      // Navigate to dashboard if login successful
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DashboardScreen(),
-                        ),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Registration successful")),
                       );
+                      Navigator.pop(context);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Login failed")),
+                        const SnackBar(content: Text("Registration failed")),
                       );
                     }
                   }
                 },
-                child: const Text("Login"),
+                child: const Text("Register"),
               ),
             ],
           ),

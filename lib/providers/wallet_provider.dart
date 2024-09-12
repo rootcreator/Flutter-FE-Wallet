@@ -12,25 +12,67 @@ class WalletProvider with ChangeNotifier {
   WalletBalance get balance => _balance;
   List<Transaction> get transactions => _transactions;
 
+  // Fetch wallet balance and transaction history from the API
   Future<void> fetchWalletData() async {
-    _balance = await ApiService.fetchBalanceFromApi();
-    _transactions = await ApiService.fetchTransactionsFromApi();
-    notifyListeners();
+    try {
+      _balance = await ApiService.fetchBalanceFromApi();
+      _transactions = await ApiService.fetchTransactionsFromApi();
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching wallet data: $e');
+      // Handle error (e.g., show error message in the UI)
+    }
   }
 
+  // Deposit into the wallet
   Future<bool> deposit(double amount) async {
-    return await _walletService.deposit(amount);
+    try {
+      bool success = await _walletService.deposit(amount);
+      if (success) {
+        await fetchWalletData();  // Refresh data only if deposit is successful
+      }
+      return success;
+    } catch (e) {
+      print('Deposit failed: $e');
+      return false;
+    }
   }
 
+  // Withdraw from the wallet
   Future<bool> withdraw(double amount) async {
-    return await _walletService.withdraw(amount);
+    try {
+      bool success = await _walletService.withdraw(amount);
+      if (success) {
+        await fetchWalletData();  // Refresh data only if withdrawal is successful
+      }
+      return success;
+    } catch (e) {
+      print('Withdraw failed: $e');
+      return false;
+    }
   }
 
+  // Transfer to another wallet
   Future<bool> transfer(double amount, String destinationWalletId) async {
-    return await _walletService.transfer(amount, destinationWalletId);
+    try {
+      bool success = await _walletService.transfer(amount, destinationWalletId);
+      if (success) {
+        await fetchWalletData();  // Refresh data only if transfer is successful
+      }
+      return success;
+    } catch (e) {
+      print('Transfer failed: $e');
+      return false;
+    }
   }
 
+  // Retrieve transaction history from the API
   Future<List<dynamic>> getTransactions() async {
-    return await _walletService.getTransactions();
+    try {
+      return await _walletService.getTransactions();
+    } catch (e) {
+      print('Error fetching transactions: $e');
+      return [];
+    }
   }
 }

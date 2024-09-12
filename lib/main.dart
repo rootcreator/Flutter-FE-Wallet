@@ -27,12 +27,12 @@ class MyApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           Routes.initialRoute: (context) => Consumer<AuthProvider>(
-                builder: (context, authProvider, _) {
-                  return authProvider.isAuthenticated
-                      ? DashboardScreen()
-                      : LoginScreen();
-                },
-              ),
+            builder: (context, authProvider, _) {
+              return authProvider.isAuthenticated
+                  ? DashboardScreen()
+                  : LoginScreen();
+            },
+          ),
           Routes.dashboardRoute: (context) => DashboardScreen(),
           Routes.depositRoute: (context) => DepositScreen(),
           Routes.withdrawRoute: (context) => WithdrawScreen(),
