@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/auth.dart';
-import './dashboard.dart';
+import 'package:wallet/main.dart';
+import 'package:wallet/screens/registration.dart';
+import 'package:wallet/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,78 +11,92 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
+  String _email = '';
+  String _password = '';
+  bool _isLoading = false;
+
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final response = await ApiService.login(_email, _password);
+
+        // Check if login was successful and token is returned
+        if (response != null && response['token'] != null) {
+          await ApiService.saveToken(response['token']);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const WalletApp()),
+          );
+        } else {
+          _showErrorSnackbar('Login failed. Please try again.');
+        }
+      } catch (e) {
+        _showErrorSnackbar('An error occurred: $e');
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: "Username"),
+                decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your username';
+                    return 'Please enter your email';
                   }
                   return null;
                 },
+                onSaved: (value) => _email = value!,
               ),
               TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
                 obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
                   }
                   return null;
                 },
+                onSaved: (value) => _password = value!,
               ),
               const SizedBox(height: 20),
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    bool success = await _authService.login(
-                      _usernameController.text,
-                      _passwordController.text,
-                    );
-
-                    setState(() {
-                      _isLoading = false;
-                    });
-
-                    if (success) {
-                      // Navigate to dashboard if login successful
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DashboardScreen(),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Login failed")),
-                      );
-                    }
-                  }
+                onPressed: _login,
+                child: const Text('Login'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+                  );
                 },
-                child: const Text("Login"),
+                child: const Text("Don't have an account? Register"),
               ),
             ],
           ),

@@ -1,95 +1,129 @@
 import 'package:flutter/material.dart';
-import '../services/auth.dart';
+import 'package:wallet/main.dart';
+import 'package:wallet/services/api_service.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegistrationScreen extends StatefulWidget {
+  const RegistrationScreen({super.key});
 
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  _RegistrationScreenState createState() => _RegistrationScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final AuthService _authService = AuthService();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
+  String _username = '';  // Changed variable name to reflect username
+  String _email = '';
+  String _password = '';
+  String _confirmPassword = '';
+  bool _isLoading = false;
+
+  void _register() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Call the register method with username, email, and password
+        final response = await ApiService.register(
+          _username,
+          _email,
+          _password,
+        );
+
+        if (response != null && response['token'] != null) {
+          await ApiService.saveToken(response['token']);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const WalletApp()),
+          );
+        } else {
+          _showErrorSnackbar('Registration failed. Please try again.');
+        }
+      } catch (e) {
+        _showErrorSnackbar('An error occurred: $e');
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      appBar: AppBar(title: const Text('Register')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: "Username"),
+                decoration: const InputDecoration(labelText: 'Username'), // Changed label to Username
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';
                   }
                   return null;
                 },
+                onSaved: (value) => _username = value!,  // Save username
               ),
               TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: "Email"),
+                decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
                   }
                   return null;
                 },
+                onSaved: (value) => _email = value!,
               ),
               TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
                 obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return 'Please enter a password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters long';
                   }
                   return null;
                 },
+                onSaved: (value) => _password = value!,
+              ),
+              TextFormField(
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (value != _password) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+                onSaved: (value) => _confirmPassword = value!,
               ),
               const SizedBox(height: 20),
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    bool success = await _authService.register(
-                      _usernameController.text,
-                      _emailController.text,
-                      _passwordController.text,
-                    );
-
-                    setState(() {
-                      _isLoading = false;
-                    });
-
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Registration successful")),
-                      );
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Registration failed")),
-                      );
-                    }
-                  }
+                onPressed: _register,
+                child: const Text('Register'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Go back to Login
                 },
-                child: const Text("Register"),
+                child: const Text('Already have an account? Login'),
               ),
             ],
           ),
