@@ -8,7 +8,7 @@ class WalletService {
   }
 
   // Fetch account
-  static Future<void> fetchAccount() async {
+  static Future<dynamic> fetchAccount() async {
     final response = await ApiService.getRequest('/account');
     return response['account'];
   }
