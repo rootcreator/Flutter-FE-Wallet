@@ -7,6 +7,12 @@ class WalletService {
     return response['balance'];
   }
 
+  // Fetch account
+  static Future<double> fetchBalance() async {
+    final response = await ApiService.getRequest('/account');
+    return response['account'];
+  }
+
   // Fetch transaction history
   static Future<List<dynamic>> fetchTransactionHistory() async {
     final response = await ApiService.getRequest('/transactions');
