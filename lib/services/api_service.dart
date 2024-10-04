@@ -81,6 +81,13 @@ class ApiService {
     return response;
   }
 
+  // Fetch KYC
+  static Future<dynamic> fetchKYC() async {
+    final response = await ApiService.getRequest('/kyc');
+    return response['kyc'];
+  }
+
+
   // Password reset request
   static Future<dynamic> passwordResetRequest(String email) async {
     return await postRequest('password-reset/', {
