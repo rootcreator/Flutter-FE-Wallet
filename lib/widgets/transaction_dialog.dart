@@ -78,46 +78,47 @@ class _TransactionDialogState extends State<TransactionDialog> {
       content: isLoading
           ? Center(child: CircularProgressIndicator())
           : Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'Amount'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an amount';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid number';
-                }
-                return null;
-              },
-            ),
-            if (widget.operation == 'Transfer')
-              TextFormField(
-                controller: _recipientController,
-                decoration: InputDecoration(labelText: 'Recipient'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a recipient';
-                  }
-                  return null;
-                },
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: 'Amount'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter an amount';
+                      }
+                      final amount = double.tryParse(value);
+                      if (amount == null || amount <= 0) {
+                        return 'Please enter a valid amount greater than zero';
+                      }
+                      return null;
+                    },
+                  ),
+                  if (widget.operation == 'Transfer')
+                    TextFormField(
+                      controller: _recipientController,
+                      decoration: InputDecoration(labelText: 'Recipient'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a recipient';
+                        }
+                        return null;
+                      },
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _submitTransaction,
-          child: Text(widget.operation),
+          onPressed: isLoading ? null : _submitTransaction, // Disable if loading
+          child: isLoading ? CircularProgressIndicator() : Text(widget.operation),
         ),
       ],
     );
