@@ -14,11 +14,22 @@ class ApiService {
     };
   }
 
-  // Save token to Shared Preferences
-  static Future<void> saveToken(String token) async {
+  // Save token and expiry to Shared Preferences
+  static Future<void> saveToken(String token, DateTime expiry) async {
     _token = token; // Store token in the private variable
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token); // Save token to shared preferences
+    await prefs.setString('token_expiry', expiry.toIso8601String()); // Save token expiry time
+  }
+
+  // Get token expiry from Shared Preferences
+  static Future<DateTime?> getTokenExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiryString = prefs.getString('token_expiry');
+    if (expiryString != null) {
+      return DateTime.parse(expiryString); // Parse and return the expiry time
+    }
+    return null;
   }
 
   // Get token from Shared Preferences
@@ -33,23 +44,34 @@ class ApiService {
     _token = prefs.getString('auth_token'); // Retrieve token from shared preferences
   }
 
-  // Clear token from Shared Preferences
+  // Clear token and expiry from Shared Preferences
   static Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token'); // Remove token from shared preferences
+    await prefs.remove('token_expiry'); // Remove token expiry
     _token = null; // Clear the private variable
+  }
+
+  // Check if the token is valid
+  static Future<bool> isTokenValid() async {
+    final expiry = await getTokenExpiry();
+    if (expiry != null) {
+      return DateTime.now().isBefore(expiry); // Check if current time is before expiry
+    }
+    return false; // No expiry info means token is invalid
   }
 
   // Login method
   static Future<dynamic> login(String email, String password) async {
-    final response = await postRequest('auth', {
+    final response = await postRequest('auth/login/', {
       'email': email,
       'password': password,
     });
 
-    // Save token after successful login
+    // Save token and expiry after successful login
     if (response['token'] != null) {
-      await saveToken(response['token']);
+      final tokenExpiry = DateTime.now().add(Duration(hours: 10)); // Example: 10 hours, based on Knox settings
+      await saveToken(response['token'], tokenExpiry); // Save both token and expiry
     }
     return response;
   }
@@ -74,19 +96,19 @@ class ApiService {
       'password': password,
     });
 
-    // Save token after successful registration
+    // Save token and expiry after successful registration
     if (response['token'] != null) {
-      await saveToken(response['token']);
+      final tokenExpiry = DateTime.now().add(Duration(hours: 10)); // Example: 10 hours
+      await saveToken(response['token'], tokenExpiry); // Save both token and expiry
     }
     return response;
   }
 
   // Fetch KYC
   static Future<dynamic> fetchKYC() async {
-    final response = await ApiService.getRequest('/kyc');
+    final response = await ApiService.getRequest('kyc/');
     return response['kyc'];
   }
-
 
   // Password reset request
   static Future<dynamic> passwordResetRequest(String email) async {
@@ -103,8 +125,13 @@ class ApiService {
     return response; // Return response for confirmation
   }
 
-  // Get Request
+  // Get Request with token validity check
   static Future<dynamic> getRequest(String endpoint) async {
+    if (!await isTokenValid()) {
+      await clearToken(); // Clear invalid token
+      throw Exception('Session expired. Please log in again.');
+    }
+
     final response = await http.get(
       Uri.parse('$baseUrl/$endpoint'),
       headers: getHeaders(),
@@ -112,8 +139,13 @@ class ApiService {
     return _processResponse(response);
   }
 
-  // Post Request
+  // Post Request with token validity check
   static Future<dynamic> postRequest(String endpoint, Map<String, dynamic> body) async {
+    if (!await isTokenValid()) {
+      await clearToken(); // Clear invalid token
+      throw Exception('Session expired. Please log in again.');
+    }
+
     final response = await http.post(
       Uri.parse('$baseUrl/$endpoint'),
       headers: getHeaders(),
