@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:wallet/services/wallet_service.dart';
 import 'package:wallet/widgets/transaction_dialog.dart';
 
@@ -46,12 +47,12 @@ class _WalletPageState extends State<WalletPage> {
               future: balanceFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
+                  return Text('Failed to load balance. Please try again.');
                 } else {
                   return Text(
-                    'Balance: \$${snapshot.data!.toStringAsFixed(2)}',
+                    'Balance: \$${NumberFormat("#,##0.00", "en_US").format(snapshot.data)}',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   );
                 }
@@ -80,9 +81,9 @@ class _WalletPageState extends State<WalletPage> {
               future: transactionsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
+                  return Text('Failed to load transactions. Please try again.');
                 } else if (snapshot.hasData && snapshot.data!.isEmpty) {
                   return Text('No transactions available');
                 } else {
@@ -94,16 +95,23 @@ class _WalletPageState extends State<WalletPage> {
                       var transaction = snapshot.data![index];
                       return ListTile(
                         title: Text(transaction['description']),
-                        subtitle: Text(transaction['date']),
-                        trailing: Text('\$${transaction['amount']}'),
+                        subtitle: Text(
+                          DateFormat('yyyy-MM-dd – HH:mm').format(
+                              DateTime.parse(transaction['date'])),
+                        ),
+                        trailing: Text(
+                          '\$${NumberFormat("#,##0.00", "en_US").format(transaction['amount'])}',
+                          style: TextStyle(
+                              color: transaction['amount'] < 0
+                                  ? Colors.red
+                                  : Colors.green),
+                        ),
                       );
                     },
                   );
                 }
               },
             ),
-            SizedBox(height: 20),
-
           ],
         ),
       ),
