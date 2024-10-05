@@ -6,8 +6,16 @@ class ApiService {
   static const String baseUrl = 'http://127.0.0.1:8000/api'; // Replace with actual base URL
   static String? _token; // Private token variable
 
+  // Fetch the saved token or load it from Shared Preferences
+  static Future<void> _loadToken() async {
+    if (_token == null) {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString('auth_token');
+    }
+  }
+
   // Common headers for API requests
-  static Map<String, String> getHeaders() {
+  static Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ${_token ?? ''}', // Use token if available
@@ -15,151 +23,127 @@ class ApiService {
   }
 
   // Save token and expiry to Shared Preferences
-  static Future<void> saveToken(String token, DateTime expiry) async {
-    _token = token; // Store token in the private variable
+  static Future<void> _saveToken(String token, DateTime expiry) async {
+    _token = token;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token); // Save token to shared preferences
-    await prefs.setString('token_expiry', expiry.toIso8601String()); // Save token expiry time
+    await prefs.setString('auth_token', token);
+    await prefs.setString('token_expiry', expiry.toIso8601String());
   }
 
-  // Get token expiry from Shared Preferences
-  static Future<DateTime?> getTokenExpiry() async {
+  // Check if the token is valid by comparing expiry
+  static Future<bool> _isTokenValid() async {
     final prefs = await SharedPreferences.getInstance();
     final expiryString = prefs.getString('token_expiry');
     if (expiryString != null) {
-      return DateTime.parse(expiryString); // Parse and return the expiry time
+      final expiry = DateTime.parse(expiryString);
+      return DateTime.now().isBefore(expiry);
     }
-    return null;
-  }
-
-  // Get token from Shared Preferences
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token'); // Retrieve token from shared preferences
-  }
-
-  // Load token from Shared Preferences
-  static Future<void> loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token'); // Retrieve token from shared preferences
+    return false;
   }
 
   // Clear token and expiry from Shared Preferences
-  static Future<void> clearToken() async {
+  static Future<void> _clearToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token'); // Remove token from shared preferences
-    await prefs.remove('token_expiry'); // Remove token expiry
-    _token = null; // Clear the private variable
+    await prefs.remove('auth_token');
+    await prefs.remove('token_expiry');
+    _token = null;
   }
 
-  // Check if the token is valid
-  static Future<bool> isTokenValid() async {
-    final expiry = await getTokenExpiry();
-    if (expiry != null) {
-      return DateTime.now().isBefore(expiry); // Check if current time is before expiry
+  // Ensure token validity before making API calls
+  static Future<void> _ensureTokenValid() async {
+    await _loadToken();
+    if (!await _isTokenValid()) {
+      await _clearToken(); // Clear expired token
+      throw Exception('Session expired. Please log in again.');
     }
-    return false; // No expiry info means token is invalid
   }
 
   // Login method
   static Future<dynamic> login(String email, String password) async {
-    final response = await postRequest('auth/login/', {
+    final response = await _postRequest('auth/login/', {
       'email': email,
       'password': password,
     });
 
-    // Save token and expiry after successful login
     if (response['token'] != null) {
-      final tokenExpiry = DateTime.now().add(Duration(hours: 10)); // Example: 10 hours, based on Knox settings
-      await saveToken(response['token'], tokenExpiry); // Save both token and expiry
+      final tokenExpiry = DateTime.now().add(Duration(hours: 10)); // Example: 10 hours
+      await _saveToken(response['token'], tokenExpiry); // Save token and expiry
     }
     return response;
   }
 
   // Logout method
   static Future<void> logout() async {
-    await postRequest('logout/', {}); // Send a POST request to logout
-    await clearToken(); // Clear token after logging out
+    await _postRequest('logout/', {});
+    await _clearToken();
   }
 
-  // Logout all method
+  // Logout all sessions method
   static Future<void> logoutAll() async {
-    await postRequest('logoutall/', {}); // Send a POST request to logout from all sessions
-    await clearToken(); // Clear token after logging out from all
+    await _postRequest('logoutall/', {});
+    await _clearToken();
   }
 
-  // Registration method
+  // Register method
   static Future<dynamic> register(String username, String email, String password) async {
-    final response = await postRequest('register/', {
+    final response = await _postRequest('register/', {
       'username': username,
       'email': email,
       'password': password,
     });
 
-    // Save token and expiry after successful registration
     if (response['token'] != null) {
-      final tokenExpiry = DateTime.now().add(Duration(hours: 10)); // Example: 10 hours
-      await saveToken(response['token'], tokenExpiry); // Save both token and expiry
+      final tokenExpiry = DateTime.now().add(Duration(hours: 10));
+      await _saveToken(response['token'], tokenExpiry);
     }
     return response;
   }
 
-  // Fetch KYC
+  // Fetch KYC information
   static Future<dynamic> fetchKYC() async {
-    final response = await ApiService.getRequest('kyc/');
-    return response['kyc'];
+    return await _getRequest('kyc/');
   }
 
   // Password reset request
   static Future<dynamic> passwordResetRequest(String email) async {
-    return await postRequest('password-reset/', {
-      'email': email,
-    });
+    return await _postRequest('password-reset/', {'email': email});
   }
 
-  // Password reset confirm
+  // Password reset confirmation
   static Future<dynamic> passwordResetConfirm(String uidb64, String token, String newPassword) async {
-    final response = await postRequest('password-reset-confirm/$uidb64/$token/', {
-      'new_password': newPassword,
-    });
-    return response; // Return response for confirmation
+    return await _postRequest('password-reset-confirm/$uidb64/$token/', {'new_password': newPassword});
   }
 
-  // Get Request with token validity check
-  static Future<dynamic> getRequest(String endpoint) async {
-    if (!await isTokenValid()) {
-      await clearToken(); // Clear invalid token
-      throw Exception('Session expired. Please log in again.');
-    }
+  // GET request method
+  static Future<dynamic> _getRequest(String endpoint) async {
+    await _ensureTokenValid(); // Ensure token is valid before making request
 
     final response = await http.get(
       Uri.parse('$baseUrl/$endpoint'),
-      headers: getHeaders(),
+      headers: _getHeaders(),
     );
     return _processResponse(response);
   }
 
-  // Post Request with token validity check
-  static Future<dynamic> postRequest(String endpoint, Map<String, dynamic> body) async {
-    if (!await isTokenValid()) {
-      await clearToken(); // Clear invalid token
-      throw Exception('Session expired. Please log in again.');
-    }
+  // POST request method
+  static Future<dynamic> _postRequest(String endpoint, Map<String, dynamic> body) async {
+    await _ensureTokenValid();
 
     final response = await http.post(
       Uri.parse('$baseUrl/$endpoint'),
-      headers: getHeaders(),
+      headers: _getHeaders(),
       body: jsonEncode(body),
     );
     return _processResponse(response);
   }
 
-  // Process API Response
+  // Process API responses
   static dynamic _processResponse(http.Response response) {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to load data: ${response.statusCode}');
+      final errorMessage = jsonDecode(response.body)['error'] ?? 'Unknown error';
+      throw Exception('Failed to load data: $errorMessage (Status code: ${response.statusCode})');
     }
   }
 }
