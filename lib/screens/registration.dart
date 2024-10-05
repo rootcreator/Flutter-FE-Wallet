@@ -11,7 +11,7 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _username = '';  // Changed variable name to reflect username
+  String _username = '';
   String _email = '';
   String _password = '';
   String _confirmPassword = '';
@@ -19,12 +19,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();  // Save form fields
+
       setState(() {
         _isLoading = true;
       });
 
       try {
-        // Call the register method with username, email, and password
+        // Call the register method
         final response = await ApiService.register(
           _username,
           _email,
@@ -32,7 +34,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         );
 
         if (response != null && response['token'] != null) {
-          await ApiService.saveToken(response['token']);
+          // Navigate to WalletApp after successful registration
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const WalletApp()),
           );
@@ -65,14 +67,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Username'), // Changed label to Username
+                decoration: const InputDecoration(labelText: 'Username'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';
                   }
                   return null;
                 },
-                onSaved: (value) => _username = value!,  // Save username
+                onSaved: (value) => _username = value!,
               ),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -96,7 +98,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   }
                   return null;
                 },
-                onSaved: (value) => _password = value!,
+                onChanged: (value) => _password = value,  // Real-time password tracking
               ),
               TextFormField(
                 obscureText: true,
@@ -110,7 +112,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   }
                   return null;
                 },
-                onSaved: (value) => _confirmPassword = value!,
               ),
               const SizedBox(height: 20),
               _isLoading
@@ -121,7 +122,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context); // Go back to Login
+                  Navigator.pop(context); // Navigate back to login screen
                 },
                 child: const Text('Already have an account? Login'),
               ),
