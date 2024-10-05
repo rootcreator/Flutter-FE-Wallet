@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:wallet/services/wallet_service.dart';
 import 'package:wallet/widgets/transaction_dialog.dart';
+import 'package:wallet/models/transaction.dart'; // Import the Transaction model
 
 class WalletPage extends StatefulWidget {
   @override
@@ -10,7 +11,7 @@ class WalletPage extends StatefulWidget {
 
 class _WalletPageState extends State<WalletPage> {
   Future<double>? balanceFuture;
-  Future<List<dynamic>>? transactionsFuture;
+  Future<List<Transaction>>? transactionsFuture; // Use Transaction model
 
   @override
   void initState() {
@@ -77,7 +78,7 @@ class _WalletPageState extends State<WalletPage> {
               ],
             ),
             SizedBox(height: 20),
-            FutureBuilder<List<dynamic>>(
+            FutureBuilder<List<Transaction>>(
               future: transactionsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -94,17 +95,15 @@ class _WalletPageState extends State<WalletPage> {
                     itemBuilder: (context, index) {
                       var transaction = snapshot.data![index];
                       return ListTile(
-                        title: Text(transaction['description']),
+                        title: Text(transaction.transactionType),
                         subtitle: Text(
-                          DateFormat('yyyy-MM-dd – HH:mm').format(
-                              DateTime.parse(transaction['date'])),
+                          DateFormat('yyyy-MM-dd – HH:mm').format(transaction.createdAt),
                         ),
                         trailing: Text(
-                          '\$${NumberFormat("#,##0.00", "en_US").format(transaction['amount'])}',
+                          '\$${NumberFormat("#,##0.00", "en_US").format(transaction.amount)}',
                           style: TextStyle(
-                              color: transaction['amount'] < 0
-                                  ? Colors.red
-                                  : Colors.green),
+                            color: transaction.amount < 0 ? Colors.red : Colors.green,
+                          ),
                         ),
                       );
                     },
