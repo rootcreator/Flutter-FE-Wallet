@@ -18,16 +18,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();  // Save the form data
       setState(() {
         _isLoading = true;
       });
 
       try {
+        // Call the ApiService login method
         final response = await ApiService.login(_email, _password);
 
-        // Check if login was successful and token is returned
+        // Check if login was successful
         if (response != null && response['token'] != null) {
-          await ApiService.saveToken(response['token']);
+          // Navigate to the WalletApp after successful login
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const WalletApp()),
           );
